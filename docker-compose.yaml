@@ -1,0 +1,59 @@
+#version: '3'
+services:
+  mysql:
+    container_name: mysql8
+    image: mysql:${MYSQL_VERSION} # 使用的镜像，版本从 .env 文件读取
+    restart: always
+    ports:
+      - 3309:3306
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: root # MySQL root 用户密码
+      MYSQL_DATABASE: msproject # 创建默认数据库
+    volumes:
+      - ${MYSQL_DIR}/data:/var/lib/mysql # 数据文件持久化
+      - ${MYSQL_DIR}/conf:/etc/mysql/conf.d/ # 配置文件目录挂载
+      - ${MYSQL_DIR}/logs:/logs # 日志文件挂载
+    command:
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_general_ci
+      --explicit_defaults_for_timestamp=true
+      --lower_case_table_names=1
+      --bind-address=0.0.0.0  # 允许外部连接
+
+  Etcd:
+    container_name: etcd3
+    image: bitnami/etcd:${ETCD_VERSION}
+    restart: always  # 重要：删除 deploy 配置，改为这个
+    environment:
+      - ALLOW_NONE_AUTHENTICATION=yes
+      - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
+      - ETCD_ADVERTISE_CLIENT_URLS=http://0.0.0.0:2379
+      - ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380
+      - ETCD_INITIAL_ADVERTISE_PEER_URLS=http://0.0.0.0:2380
+      - ETCD_INITIAL_CLUSTER=etcd3=http://0.0.0.0:2380
+      - ETCD_INITIAL_CLUSTER_STATE=new
+      - ETCD_NAME=etcd3
+    volumes:
+      - ${ETCD_DIR}/data:/bitnami/etcd/data
+    ports:
+      - "12379:2379"
+      - "12380:2380"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5673:5672"  # AMQP 端口
+      - "15673:15672"  # 管理界面端口
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin  # 设置 RabbitMQ 默认用户名
+      - RABBITMQ_DEFAULT_PASS=admin  # 设置 RabbitMQ 默认密码
+    volumes:
+      # 持久化 RabbitMQ 数据
+      - ${RABBITMQ_DIR}/data:/var/lib/rabbitmq
+      # 持久化配置文件（可选）
+      - ${RABBITMQ_DIR}/conf:/etc/rabbitmq
+      # 持久化日志文件（可选）
+      - ${RABBITMQ_DIR}/logs:/var/log/rabbitmq

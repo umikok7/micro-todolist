@@ -3,29 +3,28 @@ package main
 import (
 	"github.com/micro/go-micro/v2"
 	"github.com/micro/go-micro/v2/registry"
-	"github.com/micro/go-plugins/registry/etcdv3/v2"
-	"user/conf"
-	"user/core"
-	"user/service"
+	"github.com/micro/go-micro/v2/registry/etcd"
+	"task/conf"
+	"task/core"
+	"task/services"
 )
 
 func main() {
-	// 初始化数据库操作
 	conf.Init()
 	// etcd 注册件
-	etcdReg := etcdv3.NewRegistry(
+	etcdReg := etcd.NewRegistry(
 		registry.Addrs("192.168.1.107:12379"),
 	)
 	// 得到一个微服务实例
 	microService := micro.NewService(
-		micro.Name("rpcUserService"), // 微服务名字
-		micro.Address("127.0.0.1:8082"),
+		micro.Name("rpcTaskService"), // 微服务名字
+		micro.Address("127.0.0.1:8083"),
 		micro.Registry(etcdReg),
 	)
 
 	// 结构命令行参数，初始化
 	microService.Init()
 	// 服务注册
-	_ = service.RegisterUserServiceHandler(microService.Server(), new(core.UserService))
+	_ = services.RegisterTaskServiceHandler(microService.Server(), new(core.TaskService))
 	_ = microService.Run()
 }
